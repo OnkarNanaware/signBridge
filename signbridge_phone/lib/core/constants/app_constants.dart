@@ -16,34 +16,37 @@ const int kSignHoldMs = 300;
 /// Number of MediaPipe hand landmarks per hand.
 const int kLandmarkCount = 21;
 
-/// The curated sign vocabulary (25 signs for Phase 1).
-/// Each string is the canonical display name sent as a caption.
+/// Maximum normalized DTW distance for a valid match (lower is closer).
+const double kDtwMaxDistance = 0.40;
+
+/// The curated sign vocabulary (25 signs for Phase 2).
+/// Each string is the canonical display name.
 const List<String> kSignVocabulary = [
-  'HELLO',
-  'GOODBYE',
-  'THANK YOU',
-  'PLEASE',
-  'SORRY',
-  'YES',
-  'NO',
-  'HELP',
-  'STOP',
-  'MORE',
-  'WATER',
-  'FOOD',
-  'BATHROOM',
-  'PAIN',
-  'GOOD',
-  'BAD',
-  'UNDERSTAND',
-  'REPEAT',
-  'SLOW',
-  'FAST',
-  'I',
-  'YOU',
-  'WE',
-  'NAME',
-  'MEETING',
+  'Hello',
+  'Thank You',
+  'Please',
+  'Yes',
+  'No',
+  'Help',
+  'Stop',
+  'Wait',
+  'Sorry',
+  'Good',
+  'Bad',
+  'Understand',
+  'Repeat',
+  'Slow Down',
+  'Emergency',
+  'Doctor',
+  'Bathroom',
+  'Water',
+  'Name',
+  'Nice to meet you',
+  'One',
+  'Two',
+  'Three',
+  'Four',
+  'Five',
 ];
 
 /// Hive box names used throughout the app.

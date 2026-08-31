@@ -42,11 +42,30 @@ class MockSignLibraryRepository implements SignLibraryRepository {
   Future<SignEntry?> getSign(String signName) async => _store[signName];
 
   @override
+  Future<List<SignEntry>> getSamplesForSign(String signName) async =>
+      _store.values
+          .where(
+            (SignEntry e) =>
+                e.signName.toUpperCase() == signName.toUpperCase(),
+          )
+          .toList();
+
+  @override
   Future<void> saveSign(SignEntry entry) async =>
       _store[entry.signName] = entry;
 
   @override
-  Future<void> deleteSign(String signName) async => _store.remove(signName);
+  Future<void> deleteSign(String signName) async {
+    _store.removeWhere(
+      (String k, SignEntry v) =>
+          v.signName.toUpperCase() == signName.toUpperCase(),
+    );
+  }
+
+  @override
+  Future<void> deleteSample(SignEntry entry) async {
+    _store.remove(entry.signName);
+  }
 
   @override
   Future<int> count() async => _store.length;

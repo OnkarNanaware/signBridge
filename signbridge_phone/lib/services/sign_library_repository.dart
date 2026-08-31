@@ -11,17 +11,19 @@ abstract class SignLibraryRepository {
   /// Returns the [SignEntry] for the given [signName], or null if not found.
   Future<SignEntry?> getSign(String signName);
 
-  /// Saves a new or updated [SignEntry] to the library.
-  ///
-  /// If an entry with the same [signName] already exists it will be replaced.
+  /// Returns all recorded sample [SignEntry]s for the given [signName].
+  Future<List<SignEntry>> getSamplesForSign(String signName);
+
+  /// Saves a new sample [SignEntry] to the library.
   Future<void> saveSign(SignEntry entry);
 
-  /// Deletes the [SignEntry] for the given [signName].
-  ///
-  /// No-op if the sign does not exist.
+  /// Deletes all sample entries for the given [signName].
   Future<void> deleteSign(String signName);
 
-  /// Returns the number of signs in the library.
+  /// Deletes a specific sample entry from the library.
+  Future<void> deleteSample(SignEntry entry);
+
+  /// Returns the total number of recorded sign samples in the library.
   Future<int> count();
 
   /// Clears all entries from the library.

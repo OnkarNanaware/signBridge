@@ -29,6 +29,7 @@ class AppTheme {
   static const Color statusConnected = Color(0xFF3FB950);
   static const Color statusSearching = Color(0xFFD29922);
   static const Color statusError = Color(0xFFF85149);
+  static const Color statusDisconnected = Color(0xFF8B949E);
   static const Color demoBannerBg = Color(0xFFFFC107);
   static const Color demoBannerFg = Color(0xFF1C2128);
 
