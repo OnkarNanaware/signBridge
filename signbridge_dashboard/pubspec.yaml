@@ -8,39 +8,21 @@ environment:
   flutter: ">=3.22.0"
 
 dependencies:
+  audioplayers: ^6.0.0
   flutter:
     sdk: flutter
-
-  # State management
   flutter_riverpod: ^2.5.1
-
-  # Local storage
+  go_router: ^14.2.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-
-  # WebSocket client (connects to phone's shelf server)
+  intl: ^0.19.0
+  path_provider: ^2.1.3
   web_socket_channel: ^3.0.1
 
-  # Audio playback (speech playback panel — Phase 2)
-  audioplayers: ^6.0.0
-
-  # Utilities
-  path_provider: ^2.1.3
-  intl: ^0.19.0
-
-  # Navigation
-  go_router: ^14.2.0
-
-  # Value types
-  freezed_annotation: ^2.4.1
-
 dev_dependencies:
+  flutter_lints: ^4.0.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
-  build_runner: ^2.4.11
-  hive_generator: ^2.0.1
-  freezed: ^2.5.2
 
 flutter:
   uses-material-design: true

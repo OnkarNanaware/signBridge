@@ -49,7 +49,9 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
 
   void _onMessage(BridgeMessage msg) {
     if (msg.type != BridgeMessageType.caption &&
-        msg.type != BridgeMessageType.speech) return;
+        msg.type != BridgeMessageType.speech) {
+      return;
+    }
 
     setState(() {
       _items.insert(
@@ -130,7 +132,9 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
                     builder: (BuildContext context, Widget? child) =>
                         Container(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 16),
+                        vertical: 16,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary
                             .withValues(alpha: _flashAnim.value * 0.10),

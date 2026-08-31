@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:signbridge_dashboard/core/theme/app_theme.dart';
 import 'package:signbridge_dashboard/shared/widgets/panel_card.dart';
 
 /// Speech playback control panel.

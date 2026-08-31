@@ -16,7 +16,7 @@ const bool useMockServices = true;
 // ─────────────────────────────────────────────────────────────────────────────
 
 final Provider<OfficeKitClientService> clientServiceProvider =
-    Provider<OfficeKitClientService>((ProviderRef<OfficeKitClientService> ref) {
+    Provider<OfficeKitClientService>((Ref ref) {
   if (useMockServices) {
     final MockOfficeKitClientService mock = MockOfficeKitClientService();
     mock.startMock();
@@ -28,7 +28,7 @@ final Provider<OfficeKitClientService> clientServiceProvider =
 });
 
 final Provider<ActivityLogService> activityLogServiceProvider =
-    Provider<ActivityLogService>((ProviderRef<ActivityLogService> ref) {
+    Provider<ActivityLogService>((Ref ref) {
   if (useMockServices) return MockActivityLogService();
   // TODO(phase2): return HiveActivityLogService();
   throw UnimplementedError('Real ActivityLogService not yet implemented.');
@@ -40,22 +40,21 @@ final Provider<ActivityLogService> activityLogServiceProvider =
 
 /// Stream of all incoming bridge messages for the dashboard panels.
 final StreamProvider<BridgeMessage> incomingMessageStreamProvider =
-    StreamProvider<BridgeMessage>((StreamProviderRef<BridgeMessage> ref) {
+    StreamProvider<BridgeMessage>((Ref ref) {
   final OfficeKitClientService service = ref.watch(clientServiceProvider);
   return service.incomingMessageStream;
 });
 
 /// Stream of client connection state for the status badge.
 final StreamProvider<ClientConnectionState> clientConnectionStateProvider =
-    StreamProvider<ClientConnectionState>(
-        (StreamProviderRef<ClientConnectionState> ref) {
+    StreamProvider<ClientConnectionState>((Ref ref) {
   final OfficeKitClientService service = ref.watch(clientServiceProvider);
   return service.connectionStateStream;
 });
 
 /// Stream of activity log entries for the Logs panel.
 final StreamProvider<ActivityLogEntry> activityLogStreamProvider =
-    StreamProvider<ActivityLogEntry>((StreamProviderRef<ActivityLogEntry> ref) {
+    StreamProvider<ActivityLogEntry>((Ref ref) {
   final ActivityLogService service = ref.watch(activityLogServiceProvider);
   return service.logStream;
 });

@@ -72,7 +72,7 @@ class DashboardScreen extends ConsumerWidget {
             builder: (BuildContext context, BoxConstraints constraints) {
               // Use two-column layout on screens wider than 800px.
               if (constraints.maxWidth >= 800) {
-                return Row(
+                return const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Left — live caption (60%)
@@ -80,18 +80,18 @@ class DashboardScreen extends ConsumerWidget {
                       flex: 6,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: const [
+                        children: [
                           LiveCaptionPanel(),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     // Right — controls + playback + logs (40%)
                     Expanded(
                       flex: 4,
                       child: SingleChildScrollView(
                         child: Column(
-                          children: const [
+                          children: [
                             SessionControlsPanel(),
                             SizedBox(height: 8),
                             SpeechPlaybackPanel(),
@@ -169,13 +169,18 @@ class _DemoModeBanner extends StatelessWidget {
               color: AppTheme.demoBannerFg,
             ),
             SizedBox(width: 8),
-            Text(
-              'DEMO MODE — Mock services active. No bridge connection required.',
-              style: TextStyle(
-                color: AppTheme.demoBannerFg,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                letterSpacing: 0.3,
+            Expanded(
+              child: Text(
+                'DEMO MODE — Mock services active. No bridge connection required.',
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.demoBannerFg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           ],

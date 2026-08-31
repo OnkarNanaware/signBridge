@@ -22,13 +22,18 @@ class DemoModeBanner extends StatelessWidget {
               color: AppTheme.demoBannerFg,
             ),
             SizedBox(width: 8),
-            Text(
-              'DEMO MODE — Mock services active. No hardware or AI pipeline running.',
-              style: TextStyle(
-                color: AppTheme.demoBannerFg,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                letterSpacing: 0.3,
+            Expanded(
+              child: Text(
+                'DEMO MODE — Mock services active. No hardware or AI pipeline running.',
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.demoBannerFg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ],

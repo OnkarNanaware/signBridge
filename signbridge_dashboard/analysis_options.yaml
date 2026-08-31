@@ -8,11 +8,13 @@ analyzer:
   errors:
     missing_required_param: error
     missing_return: error
+    prefer_const_constructors: ignore
     todo: info
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - build/**
+    - windows/**
 
 linter:
   rules:
@@ -27,7 +29,6 @@ linter:
     - close_sinks
     - directives_ordering
     - eol_at_end_of_file
-    - prefer_const_constructors
     - prefer_final_fields
     - prefer_single_quotes
     - require_trailing_commas

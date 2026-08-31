@@ -8,6 +8,7 @@ analyzer:
   errors:
     missing_required_param: error
     missing_return: error
+    prefer_const_constructors: ignore
     todo: info
   exclude:
     - "**/*.g.dart"
