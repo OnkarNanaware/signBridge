@@ -83,6 +83,7 @@ void main() {
     expect(find.text('SignBridge'), findsOneWidget);
     expect(find.text('Sign → Text'), findsOneWidget);
     expect(find.text('Speech → Text'), findsOneWidget);
+    expect(find.text('Dashboard Connected'), findsOneWidget);
 
     // Unmount widget cleanly
     await tester.pumpWidget(const SizedBox());

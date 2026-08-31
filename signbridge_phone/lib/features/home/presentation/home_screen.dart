@@ -45,9 +45,19 @@ class HomeScreen extends ConsumerWidget {
             const Text('SignBridge'),
           ],
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shield_outlined, size: 20),
+            tooltip: 'Proof of Offline & Privacy',
+            onPressed: () => context.push('/offline-proof'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline_rounded, size: 20),
+            tooltip: 'Scripted Demo Mode',
+            onPressed: () => context.push('/demo'),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 12, left: 4),
             child: ConnectionStatusBadge(),
           ),
         ],

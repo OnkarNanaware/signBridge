@@ -26,6 +26,9 @@ class MockDtwMatcherService implements DtwMatcherService {
   @override
   Stream<DtwMatch> get matchStream => _controller.stream;
 
+  @override
+  int get lastMatchDurationMs => 14;
+
   /// Starts the mock emission timer. Called by the DI provider on first use.
   void startMockEmission() {
     _timer ??= Timer.periodic(

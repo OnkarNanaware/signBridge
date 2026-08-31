@@ -6,8 +6,7 @@ import 'package:signbridge_dashboard/features/live_caption/presentation/live_cap
 import 'package:signbridge_dashboard/features/logs_history/presentation/logs_history_panel.dart';
 import 'package:signbridge_dashboard/features/session_controls/presentation/session_controls_panel.dart';
 import 'package:signbridge_dashboard/features/speech_playback/presentation/speech_playback_panel.dart';
-import 'package:signbridge_dashboard/services/office_kit_client_service.dart';
-import 'package:signbridge_dashboard/shared/widgets/status_chip.dart';
+import 'package:signbridge_dashboard/shared/widgets/bridge_connection_badge.dart';
 
 /// The main dashboard screen for the hearing participant's Windows desktop.
 ///
@@ -22,14 +21,6 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
-    final AsyncValue<ClientConnectionState> stateAsync =
-        ref.watch(clientConnectionStateProvider);
-
-    final ClientConnectionState state = stateAsync.when(
-      data: (ClientConnectionState s) => s,
-      loading: () => ClientConnectionState.connecting,
-      error: (_, __) => ClientConnectionState.error,
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -52,10 +43,10 @@ class DashboardScreen extends ConsumerWidget {
             const Text('SignBridge Dashboard'),
           ],
         ),
-        actions: [
+        actions: const [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: _connectionBadge(state),
+            padding: EdgeInsets.only(right: 16),
+            child: BridgeConnectionBadge(),
           ),
         ],
         bottom: useMockServices
@@ -124,32 +115,6 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _connectionBadge(ClientConnectionState state) => switch (state) {
-        ClientConnectionState.connected => const StatusChip(
-            label: 'Phone Connected',
-            color: AppTheme.statusConnected,
-            icon: Icons.phone_android_rounded,
-          ),
-        ClientConnectionState.connecting => const StatusChip(
-            label: 'Connecting…',
-            color: AppTheme.statusSearching,
-            animate: true,
-          ),
-        ClientConnectionState.reconnecting => const StatusChip(
-            label: 'Reconnecting…',
-            color: AppTheme.statusSearching,
-            animate: true,
-          ),
-        ClientConnectionState.error => const StatusChip(
-            label: 'Error',
-            color: AppTheme.statusError,
-          ),
-        ClientConnectionState.disconnected => const StatusChip(
-            label: 'Not Connected',
-            color: AppTheme.statusError,
-          ),
-      };
 }
 
 class _DemoModeBanner extends StatelessWidget {

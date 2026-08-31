@@ -1,11 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signbridge_dashboard/core/constants/app_constants.dart';
 import 'package:signbridge_dashboard/core/di/providers.dart';
 import 'package:signbridge_dashboard/core/models/bridge_message.dart';
+import 'package:signbridge_dashboard/features/live_caption/presentation/live_caption_panel.dart';
 import 'package:signbridge_dashboard/main.dart';
 import 'package:signbridge_dashboard/services/mock/mock_activity_log_service.dart';
 import 'package:signbridge_dashboard/services/mock/mock_office_kit_client_service.dart';
+import 'package:signbridge_dashboard/shared/widgets/bridge_connection_badge.dart';
 
 void main() {
   test('Dashboard constants have correct bridge defaults', () {
@@ -30,13 +33,60 @@ void main() {
   });
 
   test('BridgeMessage dashboardMessage serialization', () {
-    final BridgeMessage message = BridgeMessage.dashboardMessage('Can you hear me?');
+    final BridgeMessage message =
+        BridgeMessage.dashboardMessage('Can you hear me?');
     final String jsonStr = message.toJson();
     final BridgeMessage deserialized = BridgeMessage.fromJson(jsonStr);
 
     expect(deserialized.type, equals('dashboard_message'));
     expect(deserialized.text, equals('Can you hear me?'));
     expect(deserialized.direction, equals(BridgeDirection.desktopToPhone));
+  });
+
+  testWidgets('BridgeConnectionBadge displays live connection status',
+      (WidgetTester tester) async {
+    final MockOfficeKitClientService mockClient = MockOfficeKitClientService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clientServiceProvider.overrideWithValue(mockClient),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: BridgeConnectionBadge(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.byType(BridgeConnectionBadge), findsOneWidget);
+    mockClient.dispose();
+  });
+
+  testWidgets('LiveCaptionPanel renders incoming captions correctly',
+      (WidgetTester tester) async {
+    final MockOfficeKitClientService mockClient = MockOfficeKitClientService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clientServiceProvider.overrideWithValue(mockClient),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: LiveCaptionPanel(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.text('Live Caption'), findsOneWidget);
+    expect(find.text('Waiting for captions from phone…'), findsOneWidget);
+
+    mockClient.dispose();
   });
 
   testWidgets('SignBridgeDashboardApp smoke test renders panels',
@@ -48,7 +98,8 @@ void main() {
       ProviderScope(
         overrides: [
           clientServiceProvider.overrideWithValue(mockClient),
-          activityLogServiceProvider.overrideWithValue(MockActivityLogService()),
+          activityLogServiceProvider
+              .overrideWithValue(MockActivityLogService()),
         ],
         child: const SignBridgeDashboardApp(),
       ),

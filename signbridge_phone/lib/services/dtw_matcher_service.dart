@@ -23,6 +23,9 @@ abstract class DtwMatcherService {
   /// Clears the current gesture window (e.g. after a committed match).
   void resetWindow();
 
+  /// Duration of the most recent DTW matching evaluation in milliseconds.
+  int get lastMatchDurationMs;
+
   /// Disposes the service and closes the match stream.
   Future<void> dispose();
 }

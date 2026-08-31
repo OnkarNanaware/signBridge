@@ -196,5 +196,10 @@ class SignBridgeColors extends ThemeExtension<SignBridgeColors> {
   }
 
   static SignBridgeColors of(BuildContext context) =>
-      Theme.of(context).extension<SignBridgeColors>()!;
+      Theme.of(context).extension<SignBridgeColors>() ??
+      const SignBridgeColors(
+        captionText: Color(0xFF0D1117),
+        panelBorder: Color(0xFFEEEEEE),
+        surface2: Color(0xFFEAEFF5),
+      );
 }
