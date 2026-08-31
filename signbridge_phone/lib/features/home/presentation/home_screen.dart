@@ -21,6 +21,8 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
+    // Keep BridgeCoordinator active to auto-publish sign and speech captions
+    ref.watch(bridgeCoordinatorProvider);
 
     return Scaffold(
       appBar: AppBar(

@@ -11,7 +11,7 @@ import 'package:signbridge_dashboard/shared/widgets/panel_card.dart';
 ///
 /// Shows an auto-scrolling list of recognised sign captions and ASR speech
 /// transcripts, with the most recent item displayed prominently at the top
-/// in large high-contrast text. Includes a copy-to-clipboard button.
+/// in large high-contrast text with confidence score indicators.
 class LiveCaptionPanel extends ConsumerStatefulWidget {
   const LiveCaptionPanel({super.key});
 
@@ -23,7 +23,7 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
     with SingleTickerProviderStateMixin {
   final List<_CaptionItem> _items = [];
   final ScrollController _scrollController = ScrollController();
-  static const int _maxItems = 20;
+  static const int _maxItems = 25;
 
   late AnimationController _flashController;
   late Animation<double> _flashAnim;
@@ -48,8 +48,11 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
   }
 
   void _onMessage(BridgeMessage msg) {
-    if (msg.type != BridgeMessageType.caption &&
-        msg.type != BridgeMessageType.speech) {
+    // Accept standard schema types and legacy aliases
+    if (msg.type != 'sign_caption' &&
+        msg.type != 'speech_caption' &&
+        msg.type != 'caption' &&
+        msg.type != 'speech') {
       return;
     }
 
@@ -57,8 +60,9 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
       _items.insert(
         0,
         _CaptionItem(
-          text: msg.payload,
+          text: msg.text,
           type: msg.type,
+          confidence: msg.confidence,
           timestamp: msg.timestamp,
         ),
       );
@@ -83,9 +87,12 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    ref.listen<AsyncValue<BridgeMessage>>(incomingMessageStreamProvider, (_, next) {
-      next.whenData(_onMessage);
-    });
+    ref.listen<AsyncValue<BridgeMessage>>(
+      incomingMessageStreamProvider,
+      (_, next) {
+        next.whenData(_onMessage);
+      },
+    );
 
     return PanelCard(
       title: 'Live Caption',
@@ -102,7 +109,7 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
         ],
       ),
       child: SizedBox(
-        height: 340,
+        height: 380,
         child: _items.isEmpty
             ? Center(
                 child: Column(
@@ -115,9 +122,10 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Waiting for captions…',
+                      'Waiting for captions from phone…',
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.45),
                       ),
                     ),
                   ],
@@ -126,70 +134,130 @@ class _LiveCaptionPanelState extends ConsumerState<LiveCaptionPanel>
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Hero caption — most recent, large display
+                  // Hero caption — most recent, large display with confidence bar
                   AnimatedBuilder(
                     animation: _flashAnim,
                     builder: (BuildContext context, Widget? child) =>
                         Container(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 16,
+                        vertical: 14,
                         horizontal: 16,
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary
-                            .withValues(alpha: _flashAnim.value * 0.10),
+                            .withValues(alpha: _flashAnim.value * 0.12),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.colorScheme.primary
+                              .withValues(alpha: 0.25),
+                        ),
                       ),
                       child: child,
                     ),
-                    child: Row(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _TypeBadge(type: _items.first.type),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CaptionText(
-                            _items.first.text,
-                            size: CaptionSize.large,
-                          ),
+                        Row(
+                          children: [
+                            _TypeBadge(type: _items.first.type),
+                            const SizedBox(width: 8),
+                            if (_items.first.isSign) ...[
+                              Text(
+                                '${(_items.first.confidence * 100).toStringAsFixed(0)}% confidence',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            Text(
+                              _formatTime(_items.first.timestamp),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.4),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 8),
+                        CaptionText(
+                          _items.first.text,
+                          size: CaptionSize.large,
+                        ),
+                        if (_items.first.isSign) ...[
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: _items.first.confidence.clamp(0.0, 1.0),
+                              minHeight: 4,
+                              backgroundColor: theme
+                                  .colorScheme.surfaceContainerHighest,
+                              color: AppTheme.statusConnected,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
-                  // History
+                  // History list
                   Expanded(
                     child: ListView.separated(
                       controller: _scrollController,
                       itemCount: _items.length - 1,
-                      separatorBuilder: (_, __) => const SizedBox(height: 2),
+                      separatorBuilder: (_, __) => const SizedBox(height: 4),
                       itemBuilder: (BuildContext context, int index) {
                         final _CaptionItem item = _items[index + 1];
                         return AnimatedOpacity(
-                          opacity: 0.45 - index * 0.03,
+                          opacity: (0.8 - index * 0.04).clamp(0.25, 0.8),
                           duration: const Duration(milliseconds: 200),
-                          child: Row(
-                            children: [
-                              _TypeBadge(type: item.type, small: true),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: CaptionText(
-                                  item.text,
-                                  size: CaptionSize.small,
-                                  maxLines: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                _TypeBadge(type: item.type, small: true),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: CaptionText(
+                                    item.text,
+                                    size: CaptionSize.small,
+                                    maxLines: 1,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                _formatTime(item.timestamp),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontSize: 10,
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.3),
+                                if (item.isSign) ...[
+                                  Text(
+                                    '${(item.confidence * 100).toStringAsFixed(0)}%',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Text(
+                                  _formatTime(item.timestamp),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontSize: 10,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.4),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -213,27 +281,31 @@ class _CaptionItem {
   const _CaptionItem({
     required this.text,
     required this.type,
+    required this.confidence,
     required this.timestamp,
   });
+
   final String text;
-  final BridgeMessageType type;
+  final String type;
+  final double confidence;
   final DateTime timestamp;
+
+  bool get isSign => type == 'sign_caption' || type == 'caption';
 }
 
-/// Small badge indicating whether a caption came from sign recognition or ASR.
+/// Badge indicating whether a caption came from sign recognition or ASR.
 class _TypeBadge extends StatelessWidget {
   const _TypeBadge({required this.type, this.small = false});
 
-  final BridgeMessageType type;
+  final String type;
   final bool small;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool isSign = type == BridgeMessageType.caption;
-    final Color color = isSign
-        ? theme.colorScheme.primary
-        : AppTheme.statusSearching;
+    final bool isSign = type == 'sign_caption' || type == 'caption';
+    final Color color =
+        isSign ? theme.colorScheme.primary : AppTheme.statusSearching;
     final String label = isSign ? 'SIGN' : 'SPEECH';
 
     return Container(

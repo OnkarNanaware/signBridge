@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:signbridge_phone/core/bridge/bridge_coordinator.dart';
 import 'package:signbridge_phone/core/models/activity_log_entry.dart';
+import 'package:signbridge_phone/core/models/bridge_message.dart';
 import 'package:signbridge_phone/core/models/dtw_match.dart';
 import 'package:signbridge_phone/core/models/landmark_point.dart';
 import 'package:signbridge_phone/services/activity_log_service.dart';
@@ -16,20 +18,23 @@ import 'package:signbridge_phone/services/mock/mock_office_kit_bridge_service.da
 import 'package:signbridge_phone/services/mock/mock_sign_library_repository.dart';
 import 'package:signbridge_phone/services/mock/mock_tts_service.dart';
 import 'package:signbridge_phone/services/office_kit_bridge_service.dart';
+import 'package:signbridge_phone/services/real/flutter_tts_service.dart';
 import 'package:signbridge_phone/services/real/hive_activity_log_service.dart';
 import 'package:signbridge_phone/services/real/hive_sign_library_repository.dart';
 import 'package:signbridge_phone/services/real/native_hand_landmark_service.dart';
 import 'package:signbridge_phone/services/real/real_camera_service.dart';
 import 'package:signbridge_phone/services/real/real_dtw_matcher_service.dart';
+import 'package:signbridge_phone/services/real/shelf_office_kit_bridge_service.dart';
+import 'package:signbridge_phone/services/real/vosk_asr_service.dart';
 import 'package:signbridge_phone/services/sign_library_repository.dart';
 import 'package:signbridge_phone/services/tts_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Feature flag — Phase 2 activates the real sign-recognition pipeline.
+// Feature flag — Phase 2/3/4 activates the real on-device pipeline & bridge.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// When true, all service providers return mock implementations.
-/// In Phase 2 this is set to false to use the on-device AI pipeline.
+/// Set to false to activate on-device Vosk ASR, Flutter TTS, and Shelf WebSocket bridge.
 const bool useMockServices = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,28 +92,63 @@ final Provider<DtwMatcherService> dtwMatcherServiceProvider =
 
 final Provider<AsrService> asrServiceProvider =
     Provider<AsrService>((Ref ref) {
-  // Vosk offline ASR arrives in Phase 3. Mock keeps app working end-to-end.
-  final MockAsrService mock = MockAsrService();
-  mock.startListening();
-  ref.onDispose(mock.dispose);
-  return mock;
+  if (useMockServices) {
+    final MockAsrService mock = MockAsrService();
+    mock.startListening();
+    ref.onDispose(mock.dispose);
+    return mock;
+  }
+  final ActivityLogService logService = ref.watch(activityLogServiceProvider);
+  final VoskAsrService service = VoskAsrService(logService);
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final Provider<TtsService> ttsServiceProvider =
     Provider<TtsService>((Ref ref) {
-  // FlutterTts offline TTS arrives in Phase 3. Mock keeps app working end-to-end.
-  final MockTtsService mock = MockTtsService();
-  ref.onDispose(mock.dispose);
-  return mock;
+  if (useMockServices) {
+    final MockTtsService mock = MockTtsService();
+    ref.onDispose(mock.dispose);
+    return mock;
+  }
+  final ActivityLogService logService = ref.watch(activityLogServiceProvider);
+  final FlutterTtsService service = FlutterTtsService(logService);
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final Provider<OfficeKitBridgeService> bridgeServiceProvider =
     Provider<OfficeKitBridgeService>((Ref ref) {
-  // Shelf WebSocket bridge arrives in Phase 4. Mock keeps app working end-to-end.
-  final MockOfficeKitBridgeService mock = MockOfficeKitBridgeService();
-  mock.startServer();
-  ref.onDispose(mock.dispose);
-  return mock;
+  if (useMockServices) {
+    final MockOfficeKitBridgeService mock = MockOfficeKitBridgeService();
+    mock.startServer();
+    ref.onDispose(mock.dispose);
+    return mock;
+  }
+  final ActivityLogService logService = ref.watch(activityLogServiceProvider);
+  final TtsService ttsService = ref.watch(ttsServiceProvider);
+  final ShelfOfficeKitBridgeService service = ShelfOfficeKitBridgeService(
+    activityLogService: logService,
+    ttsService: ttsService,
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Bridge coordinator provider ensuring DTW match and ASR speech auto-publish.
+final Provider<BridgeCoordinator> bridgeCoordinatorProvider =
+    Provider<BridgeCoordinator>((Ref ref) {
+  final DtwMatcherService dtw = ref.watch(dtwMatcherServiceProvider);
+  final AsrService asr = ref.watch(asrServiceProvider);
+  final OfficeKitBridgeService bridge = ref.watch(bridgeServiceProvider);
+
+  final BridgeCoordinator coordinator = BridgeCoordinator(
+    dtwMatcherService: dtw,
+    asrService: asr,
+    bridgeService: bridge,
+  );
+  ref.onDispose(coordinator.dispose);
+  return coordinator;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,6 +181,13 @@ final StreamProvider<BridgeConnectionState> bridgeConnectionStateProvider =
     StreamProvider<BridgeConnectionState>((Ref ref) {
   final OfficeKitBridgeService service = ref.watch(bridgeServiceProvider);
   return service.connectionStateStream;
+});
+
+/// Stream of incoming bridge messages.
+final StreamProvider<BridgeMessage> incomingBridgeMessageStreamProvider =
+    StreamProvider<BridgeMessage>((Ref ref) {
+  final OfficeKitBridgeService service = ref.watch(bridgeServiceProvider);
+  return service.incomingMessageStream;
 });
 
 /// Live stream of activity log entries for the Logs panel.

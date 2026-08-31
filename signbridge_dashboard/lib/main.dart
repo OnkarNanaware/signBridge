@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:signbridge_dashboard/core/constants/app_constants.dart';
+import 'package:signbridge_dashboard/core/models/activity_log_entry.dart';
+import 'package:signbridge_dashboard/core/models/activity_log_entry_adapters.dart';
 import 'package:signbridge_dashboard/core/theme/app_theme.dart';
 import 'package:signbridge_dashboard/features/dashboard/presentation/dashboard_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // NOTE: Hive initialisation will be added in Phase 2 when the real
-  // ActivityLogService writes to disk. In Phase 1 the mock service uses
-  // in-memory storage only.
-  // TODO(phase2): await Hive.initFlutter(); + register adapters + open boxes.
+
+  // Initialize Hive on disk for persistent session logs
+  await Hive.initFlutter();
+  Hive.registerAdapter(ActivityLogEntryAdapter());
+  Hive.registerAdapter(EventTypeAdapter());
+  await Hive.openBox<ActivityLogEntry>(kActivityLogBox);
 
   runApp(
     const ProviderScope(

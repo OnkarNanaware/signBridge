@@ -12,8 +12,8 @@ import 'package:signbridge_dashboard/shared/widgets/status_chip.dart';
 ///
 /// Allows the hearing participant to:
 ///   - Connect to the phone by IP address + port
-///   - Start / stop the session
-///   - See current connection status
+///   - Send typed text to the phone to be spoken aloud via TTS
+///   - View current bridge connection status
 class SessionControlsPanel extends ConsumerStatefulWidget {
   const SessionControlsPanel({super.key});
 
@@ -27,11 +27,13 @@ class _SessionControlsPanelState extends ConsumerState<SessionControlsPanel> {
       TextEditingController(text: kDefaultBridgeHost);
   final TextEditingController _portController =
       TextEditingController(text: kBridgePort.toString());
+  final TextEditingController _messageController = TextEditingController();
 
   @override
   void dispose() {
     _hostController.dispose();
     _portController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
@@ -44,6 +46,36 @@ class _SessionControlsPanelState extends ConsumerState<SessionControlsPanel> {
 
   Future<void> _disconnect() async {
     await ref.read(clientServiceProvider).disconnect();
+  }
+
+  Future<void> _sendMessage() async {
+    final String text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    try {
+      await ref.read(clientServiceProvider).sendMessage(
+            BridgeMessage.dashboardMessage(text),
+          );
+      _messageController.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sent to phone: "$text"'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppTheme.statusConnected,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send: $e'),
+            backgroundColor: AppTheme.statusError,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -62,7 +94,7 @@ class _SessionControlsPanelState extends ConsumerState<SessionControlsPanel> {
     final bool isConnecting = state == ClientConnectionState.connecting;
 
     return PanelCard(
-      title: 'Session Controls',
+      title: 'Session Controls & Bridge',
       icon: Icons.settings_remote_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,19 +161,51 @@ class _SessionControlsPanelState extends ConsumerState<SessionControlsPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Send test message (demo)
-          if (isConnected)
-            TextButton.icon(
-              onPressed: () => ref.read(clientServiceProvider).sendMessage(
-                    BridgeMessage.control('ping'),
-                  ),
-              icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text('Send Test Ping'),
-              style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.secondary,
-              ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+
+          // Speech Playback: Send text to phone to speak aloud via TTS
+          Text(
+            'Speech Playback (Speak on Phone)',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
             ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  enabled: isConnected,
+                  onSubmitted: (_) => _sendMessage(),
+                  decoration: InputDecoration(
+                    hintText: isConnected
+                        ? 'Type text to speak on phone...'
+                        : 'Connect to phone to send speech',
+                    prefixIcon: const Icon(
+                      Icons.record_voice_over_rounded,
+                      size: 18,
+                    ),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: isConnected ? _sendMessage : null,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text('Send'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -154,7 +218,7 @@ class _SessionControlsPanelState extends ConsumerState<SessionControlsPanel> {
             icon: Icons.phone_android_rounded,
           ),
         ClientConnectionState.connecting => const StatusChip(
-            label: 'Connecting…',
+            label: 'Connecting to Bridge…',
             color: AppTheme.statusSearching,
             animate: true,
           ),

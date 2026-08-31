@@ -5,15 +5,23 @@ import 'package:signbridge_dashboard/services/activity_log_service.dart';
 import 'package:signbridge_dashboard/services/mock/mock_activity_log_service.dart';
 import 'package:signbridge_dashboard/services/mock/mock_office_kit_client_service.dart';
 import 'package:signbridge_dashboard/services/office_kit_client_service.dart';
+import 'package:signbridge_dashboard/services/real/hive_activity_log_service.dart';
+import 'package:signbridge_dashboard/services/real/real_office_kit_client_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Feature flag — flip to false in Phase 2 to use real services.
+// Feature flag — set to false to use real WebSocket bridge client & Hive logs.
 // ─────────────────────────────────────────────────────────────────────────────
-const bool useMockServices = true;
+const bool useMockServices = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Service Providers
 // ─────────────────────────────────────────────────────────────────────────────
+
+final Provider<ActivityLogService> activityLogServiceProvider =
+    Provider<ActivityLogService>((Ref ref) {
+  if (useMockServices) return MockActivityLogService();
+  return HiveActivityLogService();
+});
 
 final Provider<OfficeKitClientService> clientServiceProvider =
     Provider<OfficeKitClientService>((Ref ref) {
@@ -23,15 +31,10 @@ final Provider<OfficeKitClientService> clientServiceProvider =
     ref.onDispose(mock.dispose);
     return mock;
   }
-  // TODO(phase2): return RealOfficeKitClientService();
-  throw UnimplementedError('Real OfficeKitClientService not yet implemented.');
-});
-
-final Provider<ActivityLogService> activityLogServiceProvider =
-    Provider<ActivityLogService>((Ref ref) {
-  if (useMockServices) return MockActivityLogService();
-  // TODO(phase2): return HiveActivityLogService();
-  throw UnimplementedError('Real ActivityLogService not yet implemented.');
+  final ActivityLogService logService = ref.watch(activityLogServiceProvider);
+  final RealOfficeKitClientService service = RealOfficeKitClientService(logService);
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -63,10 +63,9 @@ class MockOfficeKitClientService implements OfficeKitClientService {
       final String sign = _captions[_captionIndex % _captions.length];
       _captionIndex++;
       _incomingController.add(
-        BridgeMessage(
-          type: BridgeMessageType.caption,
-          payload: sign,
-          timestamp: DateTime.now().toUtc(),
+        BridgeMessage.signCaption(
+          sign,
+          confidence: 0.92,
         ),
       );
     });
@@ -75,10 +74,9 @@ class MockOfficeKitClientService implements OfficeKitClientService {
           _speechPhrases[_speechIndex % _speechPhrases.length];
       _speechIndex++;
       _incomingController.add(
-        BridgeMessage(
-          type: BridgeMessageType.speech,
-          payload: phrase,
-          timestamp: DateTime.now().toUtc(),
+        BridgeMessage.speechCaption(
+          phrase,
+          confidence: 1.0,
         ),
       );
     });
